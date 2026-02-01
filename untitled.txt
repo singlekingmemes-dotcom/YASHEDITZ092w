@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yash Editz | Official Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; }
+        .card-shadow { box-shadow: 0 4px 15px rgba(255, 0, 0, 0.1); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <nav class="p-4 border-b border-red-900/20 sticky top-0 bg-black/80 backdrop-blur-md z-50 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div id="display-logo" class="w-10 h-10 rounded-full border border-red-600 bg-center bg-cover bg-no-repeat" style="background-image: url('https://via.placeholder.com/100')"></div>
+            <span class="font-bold tracking-widest text-sm uppercase">YASH <span class="text-red-600">EDITZ</span></span>
+        </div>
+        <button onclick="adminLogin()" id="adminBtn" class="bg-white text-black px-3 py-1 rounded text-[10px] font-bold uppercase">Admin Login</button>
+    </nav>
+
+    <header class="py-16 text-center px-4">
+        <h1 class="text-4xl font-black mb-2 uppercase italic">Yash Editz</h1>
+        <p class="text-gray-500 text-sm mb-6">Professional Video Editor & Content Creator</p>
+        <a href="#" id="ig-link" target="_blank" class="inline-block border border-red-600 text-red-600 px-6 py-2 rounded-full text-xs font-bold hover:bg-red-600 hover:text-white transition">Follow Instagram</a>
+    </header>
+
+    <main id="main-content" class="max-w-4xl mx-auto px-4 pb-20 space-y-12">
+        </main>
+
+    <div id="modal" class="fixed inset-0 bg-black/95 hidden z-[100] flex items-center justify-center p-6 overflow-y-auto">
+        <div class="bg-[#111] p-6 rounded-xl border border-red-600 w-full max-w-md my-10">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-red-600 font-bold uppercase text-sm">Admin Control Panel</h3>
+                <button onclick="closeModal()" class="text-white text-2xl">&times;</button>
+            </div>
+            
+            <div class="space-y-4 mb-8 p-4 border border-gray-800 rounded-lg">
+                <p class="text-[10px] text-red-600 font-bold uppercase tracking-widest">Profile Settings</p>
+                <div>
+                    <label class="block text-[10px] text-gray-500 mb-1">CHANGE LOGO (GALLERY)</label>
+                    <input type="file" id="logoFile" accept="image/*" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700">
+                </div>
+                <input type="text" id="waNumberInput" placeholder="WhatsApp Number (e.g. 919876543210)" class="w-full p-2 bg-black border border-gray-800 rounded text-sm outline-none">
+                <button onclick="saveSettings()" class="w-full bg-blue-600 py-2 rounded text-xs font-bold uppercase">Save Profile Settings</button>
+            </div>
+
+            <form id="uploadForm" class="space-y-4">
+                <p class="text-[10px] text-red-600 font-bold uppercase tracking-widest">Upload New Video</p>
+                <input type="text" id="title" placeholder="Video Title" class="w-full p-3 bg-black border border-gray-800 rounded-lg text-sm outline-none focus:border-red-600" required>
+                <input type="url" id="link" placeholder="Video Link (YouTube/Drive)" class="w-full p-3 bg-black border border-gray-800 rounded-lg text-sm outline-none focus:border-red-600" required>
+                
+                <div>
+                    <label class="block text-[10px] text-gray-500 mb-1">VIDEO THUMBNAIL (GALLERY)</label>
+                    <input type="file" id="thumbFile" accept="image/*" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white">
+                </div>
+
+                <input type="text" id="price" placeholder="Price (₹)" class="w-full p-3 bg-black border border-gray-800 rounded-lg text-sm outline-none focus:border-red-600" required>
+                
+                <div class="flex gap-2">
+                    <select id="cat" class="flex-1 p-3 bg-black border border-gray-800 rounded-lg text-sm outline-none"></select>
+                    <button type="button" onclick="addNewCategory()" class="bg-gray-800 px-4 rounded text-white font-bold">+</button>
+                </div>
+
+                <button type="submit" class="w-full bg-red-600 py-3 font-bold rounded-lg text-sm uppercase">Publish Now</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let isAdmin = false;
+        const PWD = "myloveammu092";
+        
+        let db = JSON.parse(localStorage.getItem('yash_v3_db')) || {
+            logo: 'https://via.placeholder.com/100',
+            whatsapp: '910000000000',
+            categories: ['birthday', 'marriage', 'trending'],
+            videos: []
+        };
+
+        function adminLogin() {
+            if(!isAdmin) {
+                if(prompt("Admin Password?") === PWD) {
+                    isAdmin = true;
+                    document.getElementById('adminBtn').innerText = "OPEN PANEL";
+                    render();
+                }
+            } else {
+                updateCatDropdown();
+                document.getElementById('waNumberInput').value = db.whatsapp;
+                document.getElementById('modal').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        // Gallery se Image uthane ka function
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function saveSettings() {
+            const logoInput = document.getElementById('logoFile');
+            if(logoInput.files[0]) {
+                db.logo = await getBase64(logoInput.files[0]);
+            }
+            db.whatsapp = document.getElementById('waNumberInput').value;
+            save(); render(); alert("Settings Updated!");
+        }
+
+        function addNewCategory() {
+            let n = prompt("New Folder Name:");
+            if(n) { db.categories.push(n.toLowerCase()); save(); updateCatDropdown(); render(); }
+        }
+
+        function updateCatDropdown() {
+            document.getElementById('cat').innerHTML = db.categories.map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join('');
+        }
+
+        function render() {
+            document.getElementById('display-logo').style.backgroundImage = `url('${db.logo}')`;
+            const main = document.getElementById('main-content');
+            main.innerHTML = '';
+
+            db.categories.forEach(cat => {
+                let vids = db.videos.filter(v => v.cat === cat);
+                if(vids.length === 0 && !isAdmin) return;
+
+                let section = `
+                    <section>
+                        <h2 class="text-xs font-bold tracking-[0.2em] text-gray-600 mb-6 uppercase">● ${cat}</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${vids.map((v, i) => `
+                                <div class="bg-[#0a0a0a] rounded-xl overflow-hidden border border-gray-900 card-shadow">
+                                    <img src="${v.thumb}" class="w-full aspect-video object-cover">
+                                    <div class="p-5">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h4 class="font-bold text-sm uppercase">${v.title}</h4>
+                                            <span class="text-red-600 font-bold">₹${v.price}</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <a href="${v.link}" target="_blank" class="text-center border border-gray-800 py-2 rounded text-[10px] font-bold">PREVIEW</a>
+                                            <a href="https://wa.me/${db.whatsapp}?text=Hi, I want to book: ${v.title}" target="_blank" class="text-center bg-green-600 py-2 rounded text-[10px] font-bold">BOOK NOW</a>
+                                        </div>
+                                        ${isAdmin ? `<button onclick="deleteVid('${v.id}')" class="mt-4 text-[9px] text-gray-600 underline uppercase">Delete</button>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>`;
+                main.innerHTML += section;
+            });
+        }
+
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            let thumbData = 'https://via.placeholder.com/400x225/111/ff0000?text=Yash+Editz';
+            const tFile = document.getElementById('thumbFile').files[0];
+            
+            if(tFile) { thumbData = await getBase64(tFile); }
+
+            db.videos.push({
+                id: Date.now().toString(),
+                title: document.getElementById('title').value,
+                link: document.getElementById('link').value,
+                price: document.getElementById('price').value,
+                cat: document.getElementById('cat').value,
+                thumb: thumbData
+            });
+            save(); render(); closeModal(); e.target.reset();
+        };
+
+        function deleteVid(id) { if(confirm('Delete?')) { db.videos = db.videos.filter(v => v.id !== id); save(); render(); } }
+        function save() { localStorage.setItem('yash_v3_db', JSON.stringify(db)); }
+        render();
+    </script>
+</body>
+</html>
